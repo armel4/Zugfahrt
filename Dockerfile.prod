@@ -1,0 +1,94 @@
+# =================================================================
+# PRODUCTION DOCKERFILE - ZUGFAHRT APP
+# Multi-stage build for optimized production image
+# =================================================================
+
+# -------------------------
+# Stage 1: Build Stage
+# -------------------------
+FROM maven:3.9-eclipse-temurin-17 AS build
+
+# Set working directory
+WORKDIR /app
+
+# Copy pom.xml first for better caching
+COPY pom.xml .
+
+# Download dependencies (cached layer)
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Build application with production profile
+RUN mvn clean package -DskipTests -Pprod \
+    && ls -la target/ \
+    && java -jar target/*.jar --version || echo "JAR verification completed"
+
+# -------------------------
+# Stage 2: Runtime Stage
+# -------------------------
+FROM eclipse-temurin:17-jre-alpine AS runtime
+
+# Install security updates and utilities
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache \
+    curl \
+    tzdata \
+    tini && \
+    rm -rf /var/cache/apk/*
+
+# Create non-root user for security
+RUN addgroup -S zugfahrt && \
+    adduser -S zugfahrt -G zugfahrt -h /app
+
+# Set timezone
+ENV TZ=Europe/Berlin
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Create application directories
+RUN mkdir -p /app/logs /app/tmp && \
+    chown -R zugfahrt:zugfahrt /app
+
+# Set working directory
+WORKDIR /app
+
+# Copy JAR from build stage
+COPY --from=build /app/target/Zugfahrt-App-*.jar app.jar
+RUN chown zugfahrt:zugfahrt app.jar
+
+# Switch to non-root user
+USER zugfahrt
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Expose port
+EXPOSE 8080
+
+# JVM optimization for containers
+ENV JAVA_OPTS="-XX:+UseContainerSupport \
+    -XX:MaxRAMPercentage=75.0 \
+    -XX:+UseG1GC \
+    -XX:+UseStringDeduplication \
+    -XX:+OptimizeStringConcat \
+    -Djava.security.egd=file:/dev/./urandom \
+    -Dspring.profiles.active=prod \
+    -Dfile.encoding=UTF-8 \
+    -Djava.awt.headless=true"
+
+# Use tini for proper signal handling
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Start application
+CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+
+# Labels for metadata
+LABEL maintainer="Zugfahrt Team" \
+    version="1.0.0" \
+    description="Zugfahrt Pro - Secure Time Tracking System" \
+    org.opencontainers.image.source="https://github.com/armel4/Zugfahrt" \
+    org.opencontainers.image.title="Zugfahrt App Production" \
+    org.opencontainers.image.description="Production-ready Spring Boot application with security hardening"

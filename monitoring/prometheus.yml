@@ -1,0 +1,62 @@
+# =================================================================
+# PROMETHEUS CONFIGURATION - ZUGFAHRT PRODUCTION
+# Monitoring and metrics collection
+# =================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "alert_rules.yml"
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Zugfahrt Application
+  - job_name: "zugfahrt-app"
+    metrics_path: "/actuator/prometheus"
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["app:8080"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "zugfahrt-app"
+
+  # PostgreSQL Database
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["db:5432"]
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Redis Cache
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis:6379"]
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Nginx Reverse Proxy
+  - job_name: "nginx"
+    static_configs:
+      - targets: ["nginx:80"]
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Node Exporter (if available)
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    scrape_interval: 30s
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
