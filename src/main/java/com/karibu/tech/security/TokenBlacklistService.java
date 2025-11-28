@@ -75,6 +75,28 @@ public class TokenBlacklistService {
     }
 
     /**
+     * Check if a token is blacklisted
+     * 
+     * @param token The JWT token to check
+     * @return true if token is blacklisted, false otherwise
+     */
+    public boolean isTokenBlacklisted(String token) {
+        // Extract token ID from JWT (you might want to use a proper method)
+        String tokenId = extractTokenId(token);
+        return blacklistedTokens.containsKey(tokenId);
+    }
+
+    /**
+     * Extract a unique identifier from the JWT token
+     * In production, you might use the JWT ID claim or generate a hash
+     */
+    private String extractTokenId(String token) {
+        // For simplicity, we'll use a hash of the token
+        // In production, use the JTI claim or proper JWT parsing
+        return String.valueOf(token.hashCode());
+    }
+
+    /**
      * Revoke all tokens for a specific user (e.g., on account deletion or password
      * change)
      * Note: This requires storing user-token mapping, which is not implemented here
