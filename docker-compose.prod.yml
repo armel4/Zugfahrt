@@ -1,8 +1,7 @@
-version: '3.8'
-
 # =================================================================
 # PRODUCTION DOCKER COMPOSE - ZUGFAHRT APP
 # Complete production stack with database, cache, and monitoring
+# Docker Compose v2 format (version field removed as obsolete)
 # =================================================================
 
 services:
