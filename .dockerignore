@@ -1,0 +1,42 @@
+# Build and dependency directories
+target/
+.mvn/wrapper/maven-wrapper.jar
+node_modules/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.template
+
+# Version control
+.git/
+.gitignore
+
+# Documentation (optional - comment out if you want docs in container)
+*.md
+!README.md
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test files (optional - uncomment if you don't want tests in production)
+# src/test/
